@@ -11,6 +11,7 @@ import https from 'node:https';
 import zlib from 'node:zlib';
 import Stream, {PassThrough, pipeline as pump} from 'node:stream';
 import dataUriToBuffer from 'data-uri-to-buffer';
+import 'node-domexception';
 
 import {writeToStream, clone} from './body.js';
 import Response from './response.js';
