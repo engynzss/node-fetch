@@ -68,8 +68,7 @@ export default async function fetch(url, options_) {
 		};
 
 		if (signal && signal.aborted) {
-			abort();
-			return;
+			throw new DOMException(`Failed to execute 'fetch' on 'node-fetch': The user aborted a request.`)
 		}
 
 		const abortAndFinalize = () => {
