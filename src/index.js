@@ -37,8 +37,10 @@ export default async function fetch(url, options_) {
 	// Build request object
 	const request = new Request(url, options_);
 	const {parsedURL, options} = getNodeRequestOptions(request);
-	if (!supportedSchemas.has(parsedURL.protocol)) {
-		throw new TypeError(`node-fetch cannot load ${url}. URL scheme "${parsedURL.protocol.replace(/:$/, '')}" is not supported.`);
+	const {signal} = request;
+
+	if (signal && signal.aborted) {
+		throw new DOMException(`Failed to execute 'fetch' on 'node-fetch': The user aborted a request.`)
 	}
 
 	if (parsedURL.protocol === 'data:') {
@@ -47,9 +49,12 @@ export default async function fetch(url, options_) {
 		return response;
 	}
 
+	if (!supportedSchemas.has(parsedURL.protocol)) {
+		throw new TypeError(`node-fetch cannot load ${url}. URL scheme "${parsedURL.protocol.replace(/:$/, '')}" is not supported.`);
+	}
+
 	// Wrap http.request into fetch
 	const send = (parsedURL.protocol === 'https:' ? https : http).request;
-	const {signal} = request;
 	let response = null;
 
 	return new Promise((resolve, reject) => {
@@ -66,10 +71,6 @@ export default async function fetch(url, options_) {
 
 			response.body.emit('error', error);
 		};
-
-		if (signal && signal.aborted) {
-			throw new DOMException(`Failed to execute 'fetch' on 'node-fetch': The user aborted a request.`)
-		}
 
 		const abortAndFinalize = () => {
 			abort();
