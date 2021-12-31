@@ -33,26 +33,25 @@ const supportedSchemas = new Set(['data:', 'http:', 'https:']);
  * @return  {Promise<import('./response').default>}
  */
 export default async function fetch(url, options_) {
+	// Build request object
+	const request = new Request(url, options_);
+	const {parsedURL, options} = getNodeRequestOptions(request);
+	if (!supportedSchemas.has(parsedURL.protocol)) {
+		throw new TypeError(`node-fetch cannot load ${url}. URL scheme "${parsedURL.protocol.replace(/:$/, '')}" is not supported.`);
+	}
+
+	if (parsedURL.protocol === 'data:') {
+		const data = dataUriToBuffer(request.url);
+		const response = new Response(data, {headers: {'Content-Type': data.typeFull}});
+		return response;
+	}
+
+	// Wrap http.request into fetch
+	const send = (parsedURL.protocol === 'https:' ? https : http).request;
+	const {signal} = request;
+	let response = null;
+
 	return new Promise((resolve, reject) => {
-		// Build request object
-		const request = new Request(url, options_);
-		const {parsedURL, options} = getNodeRequestOptions(request);
-		if (!supportedSchemas.has(parsedURL.protocol)) {
-			throw new TypeError(`node-fetch cannot load ${url}. URL scheme "${parsedURL.protocol.replace(/:$/, '')}" is not supported.`);
-		}
-
-		if (parsedURL.protocol === 'data:') {
-			const data = dataUriToBuffer(request.url);
-			const response = new Response(data, {headers: {'Content-Type': data.typeFull}});
-			resolve(response);
-			return;
-		}
-
-		// Wrap http.request into fetch
-		const send = (parsedURL.protocol === 'https:' ? https : http).request;
-		const {signal} = request;
-		let response = null;
-
 		const abort = () => {
 			const error = new AbortError('The operation was aborted.');
 			reject(error);
